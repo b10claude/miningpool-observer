@@ -482,11 +482,14 @@ fn main_loop(
                 db_pool,
                 &bitcoin_block,
                 &block_tx_fees,
-                &mut last_templates,
+                &last_templates,
                 pools.clone(),
                 pool_identification_config.clone(),
             );
 
+            // The templates we kept belong to the block we just processed.
+            // Start over with the current template.
+            last_templates.clear();
             last_templates.push_back(current_template);
             continue;
         }
@@ -524,10 +527,15 @@ fn main_loop(
             db_pool,
             &bitcoin_block,
             &block_tx_fees,
-            &mut last_templates,
+            &last_templates,
             pools.clone(),
             pool_identification_config.clone(),
         );
+
+        // The templates we kept belong to the block we just processed. Start
+        // over with the current template.
+        last_templates.clear();
+        last_templates.push_back(current_template);
     }
 }
 
@@ -536,7 +544,7 @@ fn process(
     db_pool: &db_pool::PgPool,
     bitcoin_block: &Block,
     block_tx_fees: &GetBlockTxFeesResult,
-    last_templates: &mut VecDeque<GetBlockTemplateResult>,
+    last_templates: &VecDeque<GetBlockTemplateResult>,
     pools: model::SharedPoolIDData,
     pool_identification_config: PoolIdentificationConfig,
 ) {
@@ -786,8 +794,6 @@ fn process(
         log::warn!(target: processing::LOG_TARGET_PROCESSING, "Could not insert the debug_template_selection_infos into the database. Non-critical. Error: {}", e);
         return;
     }
-
-    last_templates.clear();
 }
 
 /// Returns the template that differs the least from the block, meaning the
